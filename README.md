@@ -1,0 +1,214 @@
+## goRedisORM
+
+goRedisORM is a Go package that provides a simple and convenient way to interact with Redis using an Object-Relational Mapping (ORM) approach. It offers functions for setting and getting values, working with lists, sets, hashes, and more.
+
+### Installation
+
+To use goRedisORM in your Go project, you can install it using the following command:
+
+```go
+go get github.com/your-username/goRedisORM
+```
+
+### Usage
+
+Import the package in your Go code:
+
+```go
+import (
+	"fmt"
+	"log"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/your-username/goRedisORM"
+)
+```
+
+### Creating a Redis client
+
+You can create a new Redis client using the NewClient function provided by goRedisORM:
+
+```go
+client := goRedisORM.NewClient("127.0.0.1:6379", "", 10)
+```
+
+This function takes the Redis server address, password (if any), and database number as parameters. Modify the values accordingly.
+
+### Testing the client connection
+
+You can test the client connection to Redis using the TestClient function:
+
+```go
+pong, err := goRedisORM.TestClient(client)
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println(pong)
+```
+
+### Setting and getting values
+
+You can use the SetValue and GetValue functions to set and get string values in Redis:
+
+```go
+err := goRedisORM.SetValue(client, "username", "user100")
+if err != nil {
+	log.Fatal(err)
+}
+
+username, err := goRedisORM.GetValue(client, "username")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Username:", username)
+```
+
+### Working with lists
+
+To work with lists in Redis, you can use the SetList and GetList functions:
+
+```go
+err := goRedisORM.SetList(client, "mylist", "value1", "value2", "value3")
+if err != nil {
+	log.Fatal(err)
+}
+
+listValues, err := goRedisORM.GetList(client, "mylist")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("List Values:", listValues)
+```
+
+### Working with sets
+
+You can use the SetSet and GetSet functions to work with sets in Redis:
+
+```go
+err := goRedisORM.SetSet(client, "myset", "member1", "member2", "member3")
+if err != nil {
+	log.Fatal(err)
+}
+
+setMembers, err := goRedisORM.GetSet(client, "myset")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Set Members:", setMembers)
+```
+
+### Working with hashes
+
+To work with hashes in Redis, you can use the SetHash and GetHash functions:
+
+```go
+hashValues := map[string]interface{}{
+	"key1": "value1",
+	"key2": "value2",
+	"key3": "value3",
+}
+
+err := goRedisORM.SetHash(client, "myhash", hashValues)
+if err != nil {
+	log.Fatal(err)
+}
+
+hashResult, err := goRedisORM.GetHash(client, "myhash")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Hash Result:", hashResult)
+for key, value := range hashResult {
+	fmt.Println("Key:", key, "Value:", value)
+}
+```
+
+### Deleting keys
+
+To delete keys from Redis, you can use the DeleteSet, DeleteList, DeleteHash, and DeleteValue functions:
+
+```go
+err := goRedisORM.DeleteSet(client, "myset")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Set deleted.")
+
+err = goRedisORM.DeleteList(client, "mylist")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("List deleted.")
+
+err = goRedisORM.DeleteHash(client, "myhash")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Hash deleted.")
+
+err = goRedisORM.DeleteValue(client, "username")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Value deleted.")
+```
+
+### Working with bits
+
+You can use the SetBit, GetBit, and DeleteBit functions to work with individual bits in Redis:
+
+```go
+bit, err := goRedisORM.SetBit(client, "mykey", 0, 1)
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Bit set:", bit)
+
+bit, err = goRedisORM.GetBit(client, "mykey", 0)
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Bit:", bit)
+
+bit, err = goRedisORM.DeleteBit(client, "mykey", 0)
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Bit deleted:", bit)
+```
+
+### Working with HyperLogLog
+
+You can use the HllAdd, HllCount, and HllMerge functions to work with HyperLogLog data structure in Redis:
+
+```go
+count, err := goRedisORM.HllAdd(client, "hllkey", "value1", "value2", "value3")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("HLL Add Count:", count)
+
+hllCount, err := goRedisORM.HllCount(client, "hllkey")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("HLL Count:", hllCount)
+
+err = goRedisORM.HllMerge(client, "hllmerged", "hllkey", "hllkey2")
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("HLL merged.")
+```
+
+### Complete Example
+
+You can find a complete example of goRedisORM usage in the ExampleUsage function provided. Modify the Redis server address, password, and database number according to your setup.
+
+```go
+goRedisORM.ExampleUsage()
+```
+
+### Contributing
+
+Contributions to goRedisORM are welcome! If you find any issues or have suggestions for improvement, please open an issue or submit a pull request on the GitHub repository.
