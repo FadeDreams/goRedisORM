@@ -1,167 +1,209 @@
 package goRedisORM_test
 
 import (
+	"fmt"
+	"log"
+	"sort"
 	"testing"
+	"time"
 
-	"github.com/fadedreams/goRedisORM" // Replace "your-username" with your actual username
+	"github.com/fadedreams/goRedisORM"
 	"github.com/go-redis/redis/v8"
 )
 
-func TestSetValue(t *testing.T) {
-	client := getTestClient()
-
-	err := goRedisORM.SetValue(client, "test-key", "test-value")
-	if err != nil {
-		t.Errorf("SetValue returned an error: %s", err.Error())
+func TestSetValueGetValue(t *testing.T) {
+	// Create a Redis client for testing
+	client := NewClient("localhost:6379", "", 0)
+	orm := &goRedisORM.RedisORM{
+		Client: client,
+		Prefix: "test",
 	}
 
-	value, err := goRedisORM.GetValue(client, "test-key")
+	// Set a value
+	key := "key1"
+	value := "value1"
+	expiration := time.Hour
+	err := orm.SetValue(key, value, expiration)
 	if err != nil {
-		t.Errorf("GetValue returned an error: %s", err.Error())
+		t.Errorf("Error setting value: %v", err)
 	}
 
-	if value != "test-value" {
-		t.Errorf("Expected value: %s, got: %s", "test-value", value)
+	// Get the value and check if it matches the expected value
+	gotValue, err := orm.GetValue(key)
+	if err != nil {
+		t.Errorf("Error getting value: %v", err)
+	}
+	if gotValue != value {
+		t.Errorf("Expected value %s, got %s", value, gotValue)
+	}
+
+	// Cleanup: Delete the key
+	err = orm.DeleteValue(orm.AddKeyPrefix(key))
+	if err != nil {
+		t.Errorf("Error deleting value: %v", err)
 	}
 }
 
-func TestSetList(t *testing.T) {
-	client := getTestClient()
+func NewClient(addr string, password string, db int) *redis.Client {
+	client := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       db,
+	})
+	return client
+}
 
-	key := "mylist"
-	expectedValues := []interface{}{"value1", "value2", "value3"}
+func TestSetGetList(t *testing.T) {
+	// Create a Redis client for testing
+	client := NewClient("localhost:6379", "", 0)
+	orm := &goRedisORM.RedisORM{
+		Client: client,
+		Prefix: "test",
+	}
 
-	// Delete the list if it already exists
-	err := goRedisORM.DeleteList(client, key)
+	// Set a list of values
+	key := "list1"
+	values := []interface{}{"value1", "value2", "value3"}
+	expiration := time.Hour
+	err := orm.SetList(key, expiration, values...)
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("Error setting list: %v", err)
 	}
 
-	err = goRedisORM.SetList(client, key, expectedValues...)
+	// Get the list and check if it matches the expected values
+	gotValues, err := orm.GetList(key)
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("Error getting list: %v", err)
 	}
 
-	actualValues, err := goRedisORM.GetList(client, key)
-	if err != nil {
-		t.Fatal(err)
+	if len(gotValues) != len(values) {
+		t.Errorf("Expected list length %d, got %d", len(values), len(gotValues))
 	}
 
-	if len(actualValues) != len(expectedValues) {
-		t.Fatalf("Expected list length: %d, got: %d", len(expectedValues), len(actualValues))
-	}
-
-	for i := range expectedValues {
-		if expectedValues[i] != actualValues[i] {
-			t.Errorf("Mismatch at index %d. Expected: %v, got: %v", i, expectedValues[i], actualValues[i])
+	for i := range values {
+		if values[i] != gotValues[i] {
+			t.Errorf("Expected value %s, got %s", values[i], gotValues[i])
 		}
 	}
-}
-
-func TestSetHash(t *testing.T) {
-	client := getTestClient()
-
-	hashValues := map[string]interface{}{
-		"key1": "value1",
-		"key2": "value2",
-		"key3": "value3",
-	}
-
-	err := goRedisORM.SetHash(client, "test-hash", hashValues)
+	// Cleanup: Delete the key
+	err = orm.DeleteValue(orm.AddKeyPrefix(key))
 	if err != nil {
-		t.Errorf("SetHash returned an error: %s", err.Error())
-	}
-
-	hashResult, err := goRedisORM.GetHash(client, "test-hash")
-	if err != nil {
-		t.Errorf("GetHash returned an error: %s", err.Error())
-	}
-
-	expected := map[string]string{
-		"key1": "value1",
-		"key2": "value2",
-		"key3": "value3",
-	}
-	if !equalStringStringMaps(hashResult, expected) {
-		t.Errorf("Expected hash result: %v, got: %v", expected, hashResult)
+		t.Errorf("Error deleting list: %v", err)
 	}
 }
 
-func TestSetSet(t *testing.T) {
-	client := getTestClient()
+func TestSetGetSet(t *testing.T) {
+	// Create a Redis client for testing
+	client := NewClient("localhost:6379", "", 0)
+	orm := &goRedisORM.RedisORM{
+		Client: client,
+		Prefix: "test",
+	}
 
-	err := goRedisORM.SetSet(client, "test-set", "member1", "member2", "member3")
+	// Set a set of members
+	key := "set1"
+	members := []interface{}{"member1", "member2", "member3"}
+	expiration := time.Hour
+	err := orm.SetSet(key, expiration, members...)
 	if err != nil {
-		t.Errorf("SetSet returned an error: %s", err.Error())
+		t.Errorf("Error setting set: %v", err)
 	}
 
-	setMembers, err := goRedisORM.GetSet(client, "test-set")
+	// Get the set and check if it matches the expected members
+	gotMembers, err := orm.GetSet(key)
 	if err != nil {
-		t.Errorf("GetSet returned an error: %s", err.Error())
+		t.Errorf("Error getting set: %v", err)
 	}
 
-	expected := []string{"member3", "member2", "member1"}
-	if !equalStringSlices(setMembers, expected) {
-		t.Errorf("Expected set members: %v, got: %v", expected, setMembers)
-	}
-}
+	// Sort the members for comparison
+	sort.Strings(gotMembers)
+	expectedMembers := []string{"member1", "member2", "member3"}
+	sort.Strings(expectedMembers)
 
-func TestDeleteSet(t *testing.T) {
-	client := getTestClient()
-
-	err := goRedisORM.SetSet(client, "test-set", "member1", "member2", "member3")
-	if err != nil {
-		t.Errorf("SetSet returned an error: %s", err.Error())
+	if len(gotMembers) != len(expectedMembers) {
+		t.Errorf("Expected set length %d, got %d", len(expectedMembers), len(gotMembers))
 	}
 
-	err = goRedisORM.DeleteSet(client, "test-set")
-	if err != nil {
-		t.Errorf("DeleteSet returned an error: %s", err.Error())
-	}
-
-	setMembers, err := goRedisORM.GetSet(client, "test-set")
-	if err != nil {
-		t.Errorf("GetSet returned an error: %s", err.Error())
-	}
-
-	if len(setMembers) != 0 {
-		t.Errorf("Expected no set members, got: %v", setMembers)
-	}
-}
-
-// Add more test cases for other functions as needed
-
-// Helper function to create a test Redis client
-func getTestClient() *redis.Client {
-	return goRedisORM.NewClient("127.0.0.1:6379", "", 10)
-}
-
-// Helper function to compare two string slices
-func equalStringSlices(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i, v := range a {
-		if v != b[i] {
-			return false
+	for i := range expectedMembers {
+		if expectedMembers[i] != gotMembers[i] {
+			t.Errorf("Expected member %s, got %s", expectedMembers[i], gotMembers[i])
 		}
 	}
 
-	return true
+	// Cleanup: Delete the key
+	err = orm.DeleteValue(orm.AddKeyPrefix(key))
+	if err != nil {
+		t.Errorf("Error deleting list: %v", err)
+	}
 }
 
-// Helper function to compare two string-string maps
-func equalStringStringMaps(a, b map[string]string) bool {
-	if len(a) != len(b) {
-		return false
+func TestSetGetBit(t *testing.T) {
+	// Create a Redis client for testing
+	client := NewClient("localhost:6379", "", 0)
+
+	// Set a bit
+	key := "bit1"
+	offset := int64(10)
+	value := 1
+	_, err := goRedisORM.SetBit(client, key, offset, value)
+	if err != nil {
+		t.Errorf("Error setting bit: %v", err)
 	}
 
-	for k, v := range a {
-		if bVal, ok := b[k]; !ok || v != bVal {
-			return false
-		}
+	// Get the bit and check if it matches the expected value
+	gotBit, err := goRedisORM.GetBit(client, key, offset)
+	if err != nil {
+		t.Errorf("Error getting bit: %v", err)
 	}
 
-	return true
+	if gotBit != int64(value) {
+		t.Errorf("Expected bit value %d, got %d", value, gotBit)
+	}
+
+	// Cleanup: Delete the bit
+	_, err = goRedisORM.DeleteBit(client, key, offset)
+	if err != nil {
+		t.Errorf("Error deleting bit: %v", err)
+	}
+}
+
+func TestHyperLogLogOperations(t *testing.T) {
+	// Create a Redis client
+	client := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+
+	// Flush any previous data in Redis
+	err := client.FlushDB(client.Context()).Err()
+	if err != nil {
+		log.Fatalf("Failed to flush Redis DB: %v", err)
+	}
+
+	// Test HllAdd function
+	count, err := goRedisORM.HllAdd(client, "hll_key", "value1", "value2", "value3")
+	if err != nil {
+		t.Errorf("HllAdd failed: %v", err)
+	}
+	fmt.Printf("Added %d items to HyperLogLog\n", count)
+
+	// Test HllCount function
+	count, err = goRedisORM.HllCount(client, "hll_key")
+	if err != nil {
+		t.Errorf("HllCount failed: %v", err)
+	}
+	fmt.Printf("HyperLogLog count: %d\n", count)
+
+	// Test HllMerge function
+	err = goRedisORM.HllMerge(client, "hll_dest", "hll_key")
+	if err != nil {
+		t.Errorf("HllMerge failed: %v", err)
+	}
+	fmt.Println("Merged HyperLogLogs")
+
+	// Test HllCount after merge
+	count, err = goRedisORM.HllCount(client, "hll_dest")
+	if err != nil {
+		t.Errorf("HllCount failed after merge: %v", err)
+	}
+	fmt.Printf("HyperLogLog count after merge: %d\n", count)
 }

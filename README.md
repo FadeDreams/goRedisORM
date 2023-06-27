@@ -29,55 +29,61 @@ import (
 You can create a new Redis client using the NewClient function provided by goRedisORM:
 
 ```go
-client := goRedisORM.NewClient("127.0.0.1:6379", "", 10)
+orm := goRedisORM.NewRedisORM("127.0.0.1:6379", "", 10, "prefix")
+
 ```
 
-This function takes the Redis server address, password (if any), and database number as parameters. Modify the values accordingly.
+This function takes the Redis server address, password (if any), a prefix for redis keys ,and database number as parameters. Modify the values accordingly.
 
 ### Testing the client connection
 
 You can test the client connection to Redis using the TestClient function:
 
-```go
-pong, err := goRedisORM.TestClient(client)
-if err != nil {
-	log.Fatal(err)
-}
-fmt.Println(pong)
-```
+````go
+``	pong, err := orm.TestClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(pong)
+`
 
 ### Setting and getting values
 
 You can use the SetValue and GetValue functions to set and get string values in Redis:
 
 ```go
-err := goRedisORM.SetValue(client, "username", "user100")
+err = orm.SetValue("username", "user100", time.Second*10)
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
 
-username, err := goRedisORM.GetValue(client, "username")
+username, err := orm.GetValue("username")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
 fmt.Println("Username:", username)
-```
+````
 
 ### Working with lists
 
 To work with lists in Redis, you can use the SetList and GetList functions:
 
 ```go
-err := goRedisORM.SetList(client, "mylist", "value1", "value2", "value3")
+err = orm.SetList("mylist", time.Minute*5, "value1", "value2", "value3")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
+fmt.Println("List values set successfully.")
 
-listValues, err := goRedisORM.GetList(client, "mylist")
+// GetList example
+listValues, err := orm.GetList("mylist")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("List Values:", listValues)
+fmt.Println("List values:")
+for _, value := range listValues {
+    fmt.Println(value)
+}
 ```
 
 ### Working with sets
@@ -102,24 +108,26 @@ fmt.Println("Set Members:", setMembers)
 To work with hashes in Redis, you can use the SetHash and GetHash functions:
 
 ```go
+// Set a hash with key "myhash"
 hashValues := map[string]interface{}{
-	"key1": "value1",
-	"key2": "value2",
-	"key3": "value3",
+    "field1": "value1",
+    "field2": "value2",
+    "field3": "value3",
 }
-
-err := goRedisORM.SetHash(client, "myhash", hashValues)
+err = orm.SetHash("myhash", time.Minute, hashValues)
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
+fmt.Println("Hash values have been set.")
 
-hashResult, err := goRedisORM.GetHash(client, "myhash")
+// Retrieve the hash values using the key "myhash"
+hashResult, err := orm.GetHash("myhash")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("Hash Result:", hashResult)
+fmt.Println("Hash values:")
 for key, value := range hashResult {
-	fmt.Println("Key:", key, "Value:", value)
+    fmt.Printf("%s: %s\n", key, value)
 }
 ```
 
@@ -128,29 +136,26 @@ for key, value := range hashResult {
 To delete keys from Redis, you can use the DeleteSet, DeleteList, DeleteHash, and DeleteValue functions:
 
 ```go
-err := goRedisORM.DeleteSet(client, "myset")
+// DeleteList example
+err = orm.DeleteList("mylist")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("Set deleted.")
+fmt.Println("List deleted successfully.")
 
-err = goRedisORM.DeleteList(client, "mylist")
+// DeleteSet example
+err = orm.DeleteSet("myset")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("List deleted.")
+fmt.Println("Set deleted successfully.")
 
-err = goRedisORM.DeleteHash(client, "myhash")
+// DeleteHash example
+err = orm.DeleteHash("myhash")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("Hash deleted.")
-
-err = goRedisORM.DeleteValue(client, "username")
-if err != nil {
-	log.Fatal(err)
-}
-fmt.Println("Value deleted.")
+fmt.Println("Hash deleted successfully.")
 ```
 
 ### Working with bits
@@ -158,23 +163,27 @@ fmt.Println("Value deleted.")
 You can use the SetBit, GetBit, and DeleteBit functions to work with individual bits in Redis:
 
 ```go
+// SetBit example
+client := goRedisORM.NewClient("127.0.0.1:6379", "", 10)
 bit, err := goRedisORM.SetBit(client, "mykey", 0, 1)
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("Bit set:", bit)
+fmt.Println("Bit value:", bit)
 
+// GetBit example
 bit, err = goRedisORM.GetBit(client, "mykey", 0)
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("Bit:", bit)
+fmt.Println("Bit value:", bit)
 
+// DeleteBit example
 bit, err = goRedisORM.DeleteBit(client, "mykey", 0)
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("Bit deleted:", bit)
+fmt.Println("Bit deleted successfully.")
 ```
 
 ### Working with HyperLogLog
@@ -182,23 +191,26 @@ fmt.Println("Bit deleted:", bit)
 You can use the HllAdd, HllCount, and HllMerge functions to work with HyperLogLog data structure in Redis:
 
 ```go
-count, err := goRedisORM.HllAdd(client, "hllkey", "value1", "value2", "value3")
+// HllAdd example
+count, err := goRedisORM.HllAdd(client, "myhll", "value1", "value2", "value3")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("HLL Add Count:", count)
+fmt.Println("HyperLogLog count:", count)
 
-hllCount, err := goRedisORM.HllCount(client, "hllkey")
+// HllCount example
+count, err = goRedisORM.HllCount(client, "myhll")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("HLL Count:", hllCount)
+fmt.Println("HyperLogLog count:", count)
 
-err = goRedisORM.HllMerge(client, "hllmerged", "hllkey", "hllkey2")
+// HllMerge example
+err = goRedisORM.HllMerge(client, "mergedhll", "myhll1", "myhll2", "myhll3")
 if err != nil {
-	log.Fatal(err)
+    log.Fatal(err)
 }
-fmt.Println("HLL merged.")
+fmt.Println("HyperLogLog merged successfully.")
 ```
 
 ### Complete Example
