@@ -39,13 +39,13 @@ This function takes the Redis server address, password (if any), a prefix for re
 
 You can test the client connection to Redis using the TestClient function:
 
-````go
-``	pong, err := orm.TestClient()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(pong)
-`
+```go
+pong, err := orm.TestClient()
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Println(pong)
+```
 
 ### Setting and getting values
 
@@ -62,7 +62,7 @@ if err != nil {
     log.Fatal(err)
 }
 fmt.Println("Username:", username)
-````
+```
 
 ### Working with lists
 
