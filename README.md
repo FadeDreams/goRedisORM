@@ -20,7 +20,7 @@ import (
 	"log"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/your-username/goRedisORM"
+	"github.com/FadeDreams/goRedisORM"
 )
 ```
 
