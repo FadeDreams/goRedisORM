@@ -7,7 +7,7 @@ goRedisORM is a Go package that provides a simple and convenient way to interact
 To use goRedisORM in your Go project, you can install it using the following command:
 
 ```go
-go get github.com/your-username/goRedisORM
+go get github.com/FadeDreams/goRedisORM
 ```
 
 ### Usage
